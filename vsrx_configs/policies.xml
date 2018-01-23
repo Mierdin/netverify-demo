@@ -1,0 +1,60 @@
+<configuration>
+    <security>
+        <policies operation="replace">
+            <policy>
+                <from-zone-name>trust</from-zone-name>
+                <to-zone-name>untrust</to-zone-name>
+                <policy>
+                    <name>permit-all</name>
+                    <match>
+                        <source-address>any</source-address>
+                        <destination-address>any</destination-address>
+                        <application>any</application>
+                    </match>
+                    <then>
+                        <permit>
+                        </permit>
+                    </then>
+                </policy>
+            </policy>
+            <policy>
+                <from-zone-name>untrust</from-zone-name>
+                <to-zone-name>trust</to-zone-name>
+                {% for service in services %}
+                <policy>
+                    <name>K8SPOLICY_ALLOW_{{ service.name|upper }}</name>
+                    <match>
+                        <source-address>any</source-address>
+                        <destination-address>any</destination-address>
+                        <application>k8s{{ service.name }}</application>
+                    </match>
+                    <then>
+                        <permit>
+                        </permit>
+                    </then>
+                </policy>
+                {% endfor %}
+                <policy>
+                    <name>deny-all</name>
+                    <match>
+                        <source-address>any</source-address>
+                        <destination-address>any</destination-address>
+                        <application>any</application>
+                    </match>
+                    <then>
+                        <deny/>
+                    </then>
+                </policy>
+            </policy>
+        </policies>
+    </security>
+    <applications operation="replace">
+        {% for service in services %}
+        <application>
+            <name>k8s{{ service.name }}</name>
+            <protocol>tcp</protocol>
+            <destination-port>{{ service.port }}</destination-port>
+        </application>
+        {% endfor %}
+    </applications>
+</configuration>

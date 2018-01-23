@@ -1,0 +1,66 @@
+---
+- name: Clone ToDD from Git
+  git:
+    repo: https://github.com/toddproject/todd.git
+    dest: "{{ todd_dir }}"
+
+- shell: 'sudo chmod 777 /home/vagrant/go/src/github.com/toddproject/'
+- shell: 'sudo chmod 777 /home/vagrant/go/'
+
+- name: Set PATH and GOPATH and for Vagrant user and shell profiles
+  lineinfile:
+    dest: "{{ item.file }}"
+    state: "present"
+    regexp: "^export {{ item.varname }}"
+    line: "{{ item.varval }}"
+  with_items: '{{ todd_path_exports }}'
+
+- name: Set up docker repo
+  apt_repository:
+    repo: '{{ docker_repo }}'
+    state: "present"
+
+- name: Install APT dependencies
+  apt:
+    name: "{{ item }}"
+    state: "latest"
+    update_cache: yes
+    force: yes  # Currently forcing because of a certificate error for docker-engine
+  with_items:
+    - 'git'
+    - 'docker-engine'
+
+- name: Add vagrant user to docker group
+  user:
+    name: "vagrant"
+    groups: "docker"
+    append: yes
+  register: vagrant_user_added_to_docker_group
+
+- name: Ensure docker service is restarted
+  service:
+    name: "docker"
+    state: "restarted"
+  when: vagrant_user_added_to_docker_group.changed
+
+- name: Config Files
+  file:
+    src: "{{ todd_dir }}/etc"
+    dest: "/etc/todd"
+    state: "link"
+
+- name: Download Go tarball
+  get_url:
+    url: "{{ gourl }}/{{ gotarball }}"
+    checksum: "sha256:{{ gosha256 }}"
+    validate_certs: no
+    dest: "/tmp/{{ gotarball }}"
+    mode: 0770
+
+- name: Unzip Go tarball
+  unarchive:
+    src: "/tmp/{{ gotarball }}"
+    dest: "/usr/local/"
+    copy: no
+  args:
+    creates: "/usr/local/go/bin/go"

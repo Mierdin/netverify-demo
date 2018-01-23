@@ -1,0 +1,35 @@
+---
+- name: Sudo-level VM Prep
+  hosts: all
+  become: true
+  become_user: root
+
+  tasks:
+    - name: Install APT dependencies
+      apt:
+        name: "{{ item }}"
+        state: "latest"
+        update_cache: yes
+      with_items:
+        - python-pip
+        - python-dev
+        - gcc
+        - git
+
+    - name: Install pip
+      easy_install:
+        name: pip
+        state: latest
+
+    - name: Install pip dependencies
+      pip:
+        name: "{{ item }}"
+      with_items:
+        - virtualenv
+
+- name: Setup ToDD
+  hosts: all
+  become: true
+  become_user: root
+  roles:
+    - todd
