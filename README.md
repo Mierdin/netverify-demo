@@ -49,7 +49,7 @@ Upload manifests:
 kubectl create -R -f ./guestbook/
 ```
 
-Verify the guestbook pods are running. Should see three pods for the frontend service, and three others for redis. Eventually all should go to a `Running` status.
+Verify the guestbook pods are running. Should see three pods for the frontend service, and three others for redis. Eventually all should go to a `Running` status. This may also take a little time, as Kubernetes needs to download the container images.
 
 ```
 kubectl get pods
@@ -152,7 +152,7 @@ python scripts/verification_demo.py --vsrx-port=$(vagrant ssh-config vsrx01 | gr
 Resetting to the beginning is possible with just a few commands. Mostly just deleting our Vagrant VMs, Minikube instance, and Python virtualenv.
 
 ```
-vagrant destroy
+vagrant destroy -f
 minikube delete
 deactivate && rm -rf venv/
 ```
