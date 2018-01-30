@@ -4,6 +4,8 @@ These days, being able to verify the changes you've made to a network are crucia
 
 This repo houses slides and demo material for my NFD17 presentation where I explore doing this, all based on application metadata already defined in Kubernetes.
 
+> This session was recorded, and is available [here](https://vimeo.com/252900298)
+
 We will verify that the network is configured appropriately using three methods:
 
 1. Configuration data using some basic assertions
