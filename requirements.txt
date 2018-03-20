@@ -3,3 +3,4 @@ pyyaml
 napalm
 jinja2
 requests
+jsnapy

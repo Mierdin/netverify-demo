@@ -1,4 +1,5 @@
 import argparse
+from jnpr.jsnapy import SnapAdmin
 import json
 import pprint
 import sys
@@ -15,10 +16,9 @@ def main():
     """A simple script to retrieve application details from kubernetes and generate
     needed files for later automation
     """
-    
+
     parser = argparse.ArgumentParser(description='Configure firewall')
 
-    # TODO add positional for which part of verification to perform
     parser.add_argument('verification_step', metavar='verification_step', type=str,
                         help='Verification step to run ("config", "operational", or "traffic"')
     parser.add_argument('--vsrx-port', dest='vsrx_port',
@@ -47,7 +47,7 @@ def main():
     print('\033[92mALL ASSERTIONS PASSED')    
 
 
-def config_verification(services, args):
+def old_config_verification(services, args):
     """Pull existing configuration as lxml Elements, and make assertions on contents via xpath
 
     This is a "cute" way of doing this. The easiest way to make configuration
@@ -98,6 +98,58 @@ def config_verification(services, args):
             'security/zones/security-zone[name="untrust"]/interfaces/name')][0][1]
         assert zones=='ge-0/0/2.0'
 
+def config_verification(services, args):
+    """Perform config verification with JSNAPy
+    """
+
+    def get_test_text(name, port):
+
+        return """
+---
+test_app_%s:
+- rpc: get-config
+- item:
+    id: ./name
+    xpath: 'applications/application[name="k8s%s"]'
+    tests:
+    - is-equal: destination-port, %s
+      info: "Test Succeeded!!, destination-port is <{{post['destination-port']}}>"
+      err: "Test Failed!!!, destination-port is <{{post['destination-port']}}>"
+        """ % (name, name, port)
+
+    jsnapy_config = {
+        "hosts": [
+            {
+                "device": "127.0.0.1",
+                "username": "root",
+                "passwd": "Juniper",
+                "port": args.vsrx_port
+            }
+        ],
+        "tests": []
+    }
+
+    for service in services:
+
+        # Create test file for this service
+        test_filename = "scripts/jsnapytest_%s.yaml" % service["name"]
+        with open(test_filename, 'w') as testfile:
+            testfile.write(get_test_text(service["name"], service["port"]))
+
+        # Add reference for this test file to config
+        jsnapy_config["tests"].append(test_filename)
+
+    # Write config file to disk
+    with open('scripts/jsnapyconfig.yaml', 'w') as configfile:
+        yaml.dump(jsnapy_config, configfile, default_flow_style=False)
+
+    # Retrieve instant snapshot and run tests on result
+    js = SnapAdmin()
+    chk = js.snapcheck('scripts/jsnapyconfig.yaml')
+
+    # Ensure all tests passed
+    for check in chk:
+        assert check.result == "Passed"
 
 def operational_verification(services, args):
     """Run operational verifications on our vSRX device

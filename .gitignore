@@ -2,3 +2,6 @@ verify-junos.yml
 *.retry
 .vagrant/
 venv/
+*_old.yaml
+jsnapy/
+scripts/jsnapy*

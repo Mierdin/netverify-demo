@@ -1,16 +1,16 @@
-# Network Field Day 17 - Network Verification
+# Network Verification
 
 These days, being able to verify the changes you've made to a network are crucial, especially if those changes were automated. This forms a nice feedback loop you can iterate on over time.
 
-This repo houses slides and demo material for my NFD17 presentation where I explore doing this, all based on application metadata already defined in Kubernetes.
+This repo houses slides and demo material for exploring this, all based on application metadata already defined in Kubernetes.
 
-> This session was recorded, and is available [here](https://vimeo.com/252900298)
+> An early version of this session at NFD17 was recorded, and is available [here](https://vimeo.com/252900298)
 
 We will verify that the network is configured appropriately using three methods:
 
-1. Configuration data using some basic assertions
-2. Operational data using NAPALM
-3. Actual connectivity using ToDD
+1. Configuration data using JSNAPy
+2. Operational data and basic reachability using NAPALM
+3. Application connectivity using ToDD
 
 ## Demo Dependencies
 
@@ -25,8 +25,8 @@ We will verify that the network is configured appropriately using three methods:
 First, clone this repository and navigate to the resulting directory. Unless otherwise stated, commands below are run from within this directory.
 
 ```
-git clone https://github.com/Mierdin/nfd17-netverify-demo
-cd nfd17-netverify-demo
+git clone https://github.com/Mierdin/netverify-demo
+cd netverify-demo
 ```
 
 Next, set up [minikube](https://github.com/kubernetes/minikube). I use VirtualBox on MacOS, but there are multiple options for running minikube on the project's README.
@@ -100,6 +100,13 @@ Next, we'll want to set up our virtualenv so we can run our Python scripts:
 virtualenv venv -p /usr/local/bin/python && source venv/bin/activate && pip install -r requirements.txt > /dev/null
 ```
 
+Because of a current bug with the pip-installable version of `jsnapy`, we need to install this manually from the repo:
+
+```
+git clone https://github.com/Juniper/jsnapy
+cd jsnapy && python setup.py install > /dev/null && cd ..
+```
+
 Next, let's initially configure our vSRX device so that it by default, blocks all traffic from the bastion machine to the Kubernetes cluster. To do this, we'll run a python script that uses NAPALM to load(merge) a configuration snippet. We'll then restart our vSRX so that the new forwarding options can take place.
 
 ```
@@ -157,4 +164,6 @@ Resetting to the beginning is possible with just a few commands. Mostly just del
 vagrant destroy -f
 minikube delete
 deactivate && rm -rf venv/
+rm -rf jsnapy/
+rm -f scripts/jsnapy*
 ```
